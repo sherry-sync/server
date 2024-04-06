@@ -23,7 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return token ? token.replace('Bearer ', '') : token;
   }
 
-  async validate(payload: Record<string, string>): Promise<{ id: string; email: string }> {
-    return { id: payload.id, email: payload.email };
+  async validate(payload: Record<string, string>): Promise<Record<string, string>> {
+    return payload;
   }
 }

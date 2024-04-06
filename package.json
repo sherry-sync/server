@@ -33,6 +33,7 @@
     "fastify": "^4.26.1",
     "fastify-multer": "^2.0.3",
     "fastify-multipart": "^5.4.0",
+    "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.1"
   },

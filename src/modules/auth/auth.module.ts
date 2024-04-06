@@ -3,12 +3,14 @@ import { JwtModule } from '@nestjs/jwt';
 
 import { appConfig } from '@shared/configs';
 import { CryptoService } from '@shared/services/crypto.service';
-import { EmailService } from '@shared/services/email.service';
 import { JwtStrategy } from '@shared/strategies';
 
 import { AuthController } from '@modules/auth/auth.controller';
 import { AuthService } from '@modules/auth/auth.service';
 import { UserModule } from '@modules/user/user.module';
+import { UserRepository } from '@modules/user/user.repository';
+import { UserService } from '@modules/user/user.service';
+import {PrismaService} from '@shared/services';
 
 @Module({
   imports: [
@@ -19,6 +21,6 @@ import { UserModule } from '@modules/user/user.module';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, CryptoService, JwtStrategy, EmailService],
+  providers: [AuthService, CryptoService, UserService, UserRepository, PrismaService,JwtStrategy],
 })
 export class AuthModule {}

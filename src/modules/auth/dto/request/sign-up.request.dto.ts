@@ -1,4 +1,7 @@
-import { IsDefined, IsEmail, IsNotEmpty, Matches, MinLength } from 'class-validator';
+import {
+  IsDefined, IsEmail, IsNotEmpty, Matches, MinLength,
+} from 'class-validator';
+
 import { minLengthPasswordValidation, minLengthUsernameValidation, passwordMatchPattern } from '@common/constants';
 
 export class SignUpRequestDto {
@@ -13,5 +16,5 @@ export class SignUpRequestDto {
   @IsNotEmpty()
   @MinLength(minLengthPasswordValidation)
   @Matches(passwordMatchPattern, { message: 'password too weak' })
-  password: string;
+    password: string;
 }

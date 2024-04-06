@@ -25,12 +25,7 @@ class AppConfig {
   }
 
   getHost(): string {
-    return this.getValue('HOST') || '0.0.0.0';
-  }
-
-  getConfirmUrl(): string {
-    const clientUrl = this.getValue('CLIENT_URL', true);
-    return `${clientUrl}/auth/verify`;
+    return this.getValue('HOST', false) || '0.0.0.0';
   }
 
   getPort(): string | number {
@@ -64,8 +59,8 @@ class AppConfig {
 }
 
 const appConfig = new AppConfig(process.env).ensureValues([
+  'DATABASE_URL',
   'PORT',
-  'HOST',
   'APP_SECRET',
   'JWT_EXPIRED',
   'REFRESH_TOKEN_SECRET',

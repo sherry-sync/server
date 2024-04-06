@@ -1,3 +1,5 @@
+/* eslint @typescript-eslint/ban-types: off */
+
 import { ArgumentMetadata, Injectable, PipeTransform } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
@@ -6,7 +8,7 @@ import { ValidationException } from '@shared/exceptions';
 
 @Injectable()
 export class ValidationPipe implements PipeTransform {
-  async transform(value: unknown, { metatype }: ArgumentMetadata): Promise<any> {
+  async transform<T = unknown>(value: T, { metatype }: ArgumentMetadata): Promise<T> {
     if (!metatype || !this.toValidate(metatype)) {
       return value;
     }
@@ -19,7 +21,7 @@ export class ValidationPipe implements PipeTransform {
 
     const errors = await validate(object, { whitelist: true, forbidNonWhitelisted: true });
     if (errors.length > 0) {
-      const messages = errors.map((error) => `${error.property} - ${Object.values(error.constraints).join(', ')}`);
+      const messages = errors.map((error) => `${error.property} - ${Object.values(error.constraints || {}).join(', ')}`);
       throw new ValidationException(messages);
     }
     return value;

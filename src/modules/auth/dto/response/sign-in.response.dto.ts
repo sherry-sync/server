@@ -1,32 +1,25 @@
+import { User } from '@prisma/client';
 import { Expose, plainToClass } from 'class-transformer';
-import { UserCompanyWithTokensType } from '@shared/types';
-import { Company } from '@prisma/client';
-import { Optional } from '@nestjs/common';
+
+import { TokenPair } from '@modules/auth/types';
 
 export class SignInResponseDto {
   @Expose()
-  id: string;
+    id: string;
 
   @Expose()
-  email: string;
+    email: string;
 
   @Expose()
-  username: string;
+    username: string;
 
   @Expose()
-  isEmailConfirmed: boolean;
+    accessToken: string;
 
   @Expose()
-  accessToken: string;
+    refreshToken: string;
 
-  @Expose()
-  refreshToken: string;
-
-  @Expose()
-  @Optional()
-  company?: Company;
-
-  static mapFrom(data: UserCompanyWithTokensType): SignInResponseDto {
+  static mapFrom(data: User & TokenPair): SignInResponseDto {
     return plainToClass(SignInResponseDto, data, { excludeExtraneousValues: true });
   }
 }
