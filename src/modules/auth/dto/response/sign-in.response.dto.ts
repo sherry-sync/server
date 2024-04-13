@@ -5,7 +5,7 @@ import { TokenPair } from '@modules/auth/types';
 
 export class SignInResponseDto {
   @Expose()
-    id: string;
+    userId: string;
 
   @Expose()
     email: string;

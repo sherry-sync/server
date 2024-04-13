@@ -15,6 +15,6 @@ export class SignUpRequestDto {
 
   @IsNotEmpty()
   @MinLength(minLengthPasswordValidation)
-  @Matches(passwordMatchPattern, { message: 'password too weak' })
+  @Matches(passwordMatchPattern, { message: 'Password should contain at least 1 number and 1 capital letter.' })
     password: string;
 }

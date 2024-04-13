@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   Injectable, NotFoundException, UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -23,6 +24,10 @@ export class AuthService {
 
   async registration(dto: SignUpRequestDto): Promise<UserResponseDto> {
     const hashedPassword = await this.cryptoService.encryptString(dto.password);
+    const existingUser = await this.userService.getByEmail(dto.email);
+    if (existingUser) {
+      throw new ConflictException('User already exists');
+    }
     const user = await this.userService.create({ ...dto, password: hashedPassword });
 
     return UserResponseDto.mapFrom(user);

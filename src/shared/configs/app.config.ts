@@ -29,7 +29,7 @@ class AppConfig {
   }
 
   getPort(): string | number {
-    return this.getValue('PORT') || defaultPort;
+    return this.getValue('PORT', false) || defaultPort;
   }
 
   getFrontApiLink(): string {
