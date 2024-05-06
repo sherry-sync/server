@@ -6,7 +6,7 @@ import { HttpUser } from '@shared/decorators';
 import { JWTAuthGuard } from '@shared/guards';
 import { HttpUserPayload } from '@shared/types';
 
-import { CreateSherryDto, UpdateSherryDto } from '@modules/sherry/dto/request ';
+import { CreateSherryDto, UpdateSherryDto } from '@modules/sherry/dto/request';
 import { SherryResponseDto } from '@modules/sherry/dto/response';
 import { SherryService } from '@modules/sherry/sherry.service';
 

@@ -11,7 +11,6 @@ import { AppModule } from '@modules/app.module';
 
 const port = appConfig.getPort();
 const host = appConfig.getHost();
-const frontApi = appConfig.getFrontApiLink();
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -21,7 +20,7 @@ async function bootstrap(): Promise<void> {
   );
 
   app.enableCors({
-    origin: frontApi,
+    origin: '*',
     credentials: true,
   });
 

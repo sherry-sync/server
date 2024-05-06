@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { FileName, FileType } from '@prisma/client';
 
-import { CreateSherryDto, UpdateSherryDto } from '@modules/sherry/dto/request ';
+import { CreateSherryDto, UpdateSherryDto } from '@modules/sherry/dto/request';
 import { SherryResponseDto } from '@modules/sherry/dto/response';
 import { SherryRepository } from '@modules/sherry/sherry.repository';
 
