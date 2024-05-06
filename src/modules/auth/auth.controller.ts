@@ -1,5 +1,5 @@
 import {
-  Body, Controller, HttpCode, Post,
+  Body, Controller, HttpCode, HttpStatus, Post,
 } from '@nestjs/common';
 
 import { AuthService } from '@modules/auth/auth.service';
@@ -21,13 +21,13 @@ export class AuthController {
   }
 
   @Post('sign-in')
-  @HttpCode(200)
+  @HttpCode(HttpStatus.OK)
   async login(@Body() signInDto: SignInRequestDto): Promise<SignInResponseDto> {
     return this.authService.login(signInDto);
   }
 
   @Post('refresh')
-  @HttpCode(200)
+  @HttpCode(HttpStatus.OK)
   async refresh(@Body() refreshDto: RefreshRequestDto): Promise<SignInResponseDto> {
     return this.authService.regenerateTokens(refreshDto.refreshToken);
   }
