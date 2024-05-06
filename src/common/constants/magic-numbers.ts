@@ -11,3 +11,10 @@ export const cryptoDigest = 'sha512';
 export const minLengthPasswordValidation = 6;
 export const minLengthUsernameValidation = 4;
 export const passwordMatchPattern = /^(?=.*[A-Z])(?=.*\d).+/;
+
+// sherry config
+
+export const defaultMaxFileSize = 500;
+export const defaultMaxDirectorySize = 1000;
+
+export const isDirectoryAllowed = true;

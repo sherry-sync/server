@@ -32,6 +32,7 @@ module.exports = {
   overrides: [{
     files: ['**/*.ts'],
     rules: {
+      'unicorn/explicit-length-check': 'off',
       'class-methods-use-this': 'off',
       'import/prefer-default-export': 'off',
       'simple-import-sort/imports': [
