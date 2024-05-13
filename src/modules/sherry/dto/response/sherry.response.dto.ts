@@ -14,6 +14,9 @@ export class SherryResponseDto {
     maxFileSize: number;
 
   @Expose()
+    userId: string;
+
+  @Expose()
     maxDirSize: number;
 
   @Expose()
