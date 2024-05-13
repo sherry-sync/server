@@ -27,7 +27,9 @@ module.exports = {
     'typescript-eslint/ban-types': 'off',
     "import/first": "error",
     "import/newline-after-import": "error",
-    "import/no-duplicates": "error"
+    "import/no-duplicates": "error",
+    "unicorn/prefer-module": "off",
+    "unicorn/no-abusive-eslint-disable": "off"
   },
   overrides: [{
     files: ['**/*.ts'],

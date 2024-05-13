@@ -24,8 +24,6 @@ async function bootstrap(): Promise<void> {
     credentials: true,
   });
 
-  // await app.register(fastifyCookie, cookieConfig);
-
   await app.register(contentParser);
 
   await app.register(helmet, {
@@ -38,9 +36,6 @@ async function bootstrap(): Promise<void> {
       },
     },
   });
-
-  // const prismaService = app.get(PrismaService);
-  // await prismaService.enableShutdownHooks(app);
 
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalFilters(new AllExceptionsFilter());

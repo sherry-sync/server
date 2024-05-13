@@ -1,13 +1,51 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { FileName, FileType } from '@prisma/client';
 
-import { CreateSherryDto, UpdateSherryDto } from '@modules/sherry/dto/request';
+import { EventTypes, SherryPermissionAction } from '@shared/enums';
+
+import { EventService } from '@modules/event';
+import { CreateSherryDto, UpdateSherryDto, UpdateSherryPermissionDto } from '@modules/sherry/dto/request';
 import { SherryResponseDto } from '@modules/sherry/dto/response';
 import { SherryRepository } from '@modules/sherry/sherry.repository';
 
 @Injectable()
 export class SherryService {
-  constructor(private readonly sherryRepository: SherryRepository) {}
+  constructor(
+    private readonly sherryRepository: SherryRepository,
+    private readonly eventService: EventService,
+  ) {}
+
+  async updatePermission(
+    ownerId: string,
+    sherryId: string,
+    userId: string,
+    data: UpdateSherryPermissionDto,
+  ) {
+    const sherry = await this.sherryRepository.getById(ownerId, sherryId);
+    if (!sherry) {
+      throw new NotFoundException(`Sherry with id ${sherryId} does not exists.`);
+    }
+
+    if (data.action === SherryPermissionAction.GRANT) {
+      const existingPermission = sherry.sherryPermission.find((perm) => perm.userId === userId);
+      if (existingPermission) {
+        throw new ConflictException(`Permission user for ${userId} already exists`);
+      }
+      const permission = await this.sherryRepository.createRole({
+        sherryId,
+        userId,
+        role: data.role,
+      });
+      await this.eventService.sendEvent(EventTypes.ACCESS_GRANTED, [userId], permission);
+      return permission;
+    }
+    const permission = sherry.sherryPermission.find((perm) => perm.userId === userId);
+    if (!permission) {
+      throw new NotFoundException(`Role for user ${userId} does not exist`);
+    }
+    await this.eventService.sendEvent(EventTypes.ACCESS_REMOVED, [userId], permission);
+    return this.sherryRepository.deleteRole(permission.sherryPermissionId);
+  }
 
   async getAllByUserId(userId: string): Promise<SherryResponseDto[]> {
     const sherries = await this.sherryRepository.getAllByUserId(userId);
