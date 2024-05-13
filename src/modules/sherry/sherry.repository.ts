@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
-  FileName, FileType, Prisma, Sherry,
+  FileName, FileType, Prisma, Sherry, SherryPermission,
 } from '@prisma/client';
 
 import { PrismaService } from '@shared/services';
@@ -8,6 +8,18 @@ import { PrismaService } from '@shared/services';
 @Injectable()
 export class SherryRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  async createRole(data: Prisma.SherryPermissionUncheckedCreateInput): Promise<SherryPermission> {
+    return this.prisma.sherryPermission.create({
+      data,
+    });
+  }
+
+  async deleteRole(sherryPermissionId: string): Promise<SherryPermission> {
+    return this.prisma.sherryPermission.delete({
+      where: { sherryPermissionId },
+    });
+  }
 
   async getAllByUserId(userId: string): Promise<Sherry[]> {
     return this.prisma.sherry.findMany({
@@ -26,12 +38,19 @@ export class SherryRepository {
     });
   }
 
-  async getById(userId: string, sherryId: string): Promise<Sherry | null> {
+  async getById(userId: string, sherryId: string): Promise<Prisma.SherryGetPayload<{
+    include: {
+      allowedFileNames: true,
+      allowedFileTypes: true,
+      sherryPermission: true,
+    }
+  }> | null> {
     return this.prisma.sherry.findUnique({
       where: { userId, sherryId },
       include: {
         allowedFileNames: true,
         allowedFileTypes: true,
+        sherryPermission: true,
       },
     });
   }

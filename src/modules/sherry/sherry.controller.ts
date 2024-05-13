@@ -6,7 +6,7 @@ import { HttpUser } from '@shared/decorators';
 import { JWTAuthGuard } from '@shared/guards';
 import { HttpUserPayload } from '@shared/types';
 
-import { CreateSherryDto, UpdateSherryDto } from '@modules/sherry/dto/request';
+import { CreateSherryDto, UpdateSherryDto, UpdateSherryPermissionDto } from '@modules/sherry/dto/request';
 import { SherryResponseDto } from '@modules/sherry/dto/response';
 import { SherryService } from '@modules/sherry/sherry.service';
 
@@ -50,5 +50,22 @@ export class SherryController {
     @Body() updateDto: UpdateSherryDto,
   ) {
     return this.sherryService.update(user.userId, sherryId, updateDto);
+  }
+
+  @Patch(':sherryId/users/:userId/permission')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JWTAuthGuard)
+  async updatePermission(
+  @HttpUser() user: HttpUserPayload,
+    @Param('sherryId', ParseUUIDPipe) sherryId: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Body() updateSherryPermissionDto: UpdateSherryPermissionDto,
+  ) {
+    return this.sherryService.updatePermission(
+      user.userId,
+      sherryId,
+      userId,
+      updateSherryPermissionDto,
+    );
   }
 }

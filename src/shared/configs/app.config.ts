@@ -48,6 +48,10 @@ class AppConfig {
     return this.getValue('JWT_EXPIRED', true);
   }
 
+  getFilePath(): string {
+    return this.getValue('FILE_FOLDER', false) || 'uploads';
+  }
+
   // TODO uncomment after AWS configuration.
   // getAWSConfig(): never {
   //   return {
