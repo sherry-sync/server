@@ -1,6 +1,6 @@
 import {
   Body,
-  Controller, Get, HttpCode, Patch, UseGuards,
+  Controller, Get, HttpCode, Patch, Query, UseGuards,
 } from '@nestjs/common';
 
 import { HttpUser } from '@shared/decorators';
@@ -26,5 +26,12 @@ export class UserController {
   @UseGuards(JWTAuthGuard)
   async patchMe(@HttpUser() user: HttpUserPayload, @Body() pathUserDto: PatchMeRequestDto) {
     return this.userService.patchMe(user.userId, pathUserDto);
+  }
+
+  @Get('find')
+  @HttpCode(200)
+  @UseGuards(JWTAuthGuard)
+  async findUsers(@Query('username') username: string) {
+    return this.userService.find({ where: { username: { contains: username } } });
   }
 }
