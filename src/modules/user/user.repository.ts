@@ -3,6 +3,8 @@ import { Prisma, User } from '@prisma/client';
 
 import { PrismaService } from '@shared/services';
 
+import { UserResponseDto } from '@modules/auth/dto';
+
 @Injectable()
 export class UserRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -26,5 +28,11 @@ export class UserRepository {
 
   async findAll(): Promise<User[]> {
     return this.prisma.user.findMany();
+  }
+
+  async findMany(data: Prisma.UserFindManyArgs): Promise<UserResponseDto[]> {
+    return this.prisma.user.findMany(data)
+      .then((users) => users
+        .map((u) => UserResponseDto.mapFrom(u)));
   }
 }

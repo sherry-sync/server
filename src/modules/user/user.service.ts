@@ -49,4 +49,8 @@ export class UserService {
   async findAll(): Promise<User[]> {
     return this.userRepository.findAll();
   }
+
+  async find(query: Prisma.UserFindManyArgs): Promise<UserResponseDto[]> {
+    return this.userRepository.findMany(query);
+  }
 }

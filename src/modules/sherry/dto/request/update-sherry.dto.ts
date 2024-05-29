@@ -1,6 +1,6 @@
 import { Optional } from '@nestjs/common';
 import {
-  IsArray, IsBoolean, IsInt, IsPositive, IsString,
+  IsArray, IsBoolean, IsInt, IsOptional, IsPositive, IsString,
 } from 'class-validator';
 
 import {
@@ -11,6 +11,7 @@ import {
 
 export class UpdateSherryDto {
   @IsString()
+  @IsOptional()
     name: string;
 
   @IsPositive()

@@ -36,6 +36,8 @@ model Sherry {
   userId           String             @db.Uuid
   User             User               @relation(fields: [userId], references: [userId])
   sherryPermission SherryPermission[]
+
+  @@unique([userId, name])
 }
 
 model FileType {
