@@ -1,5 +1,7 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { FileName, FileType } from '@prisma/client';
+import {
+  ConflictException, ForbiddenException, Injectable, NotFoundException,
+} from '@nestjs/common';
+import { FileName, FileType, SherryRole } from '@prisma/client';
 
 import { EventTypes, SherryPermissionAction } from '@shared/enums';
 
@@ -14,6 +16,38 @@ export class SherryService {
     private readonly sherryRepository: SherryRepository,
     private readonly eventService: EventService,
   ) {}
+
+  async delete(
+    userId: string,
+    sherryId: string,
+  ) {
+    const sherry = await this.sherryRepository.getById(userId, sherryId);
+    if (!sherry) {
+      throw new NotFoundException(`Sherry with id ${sherryId} does not exists.`);
+    }
+
+    const permission = await this.sherryRepository.getPermissionBySherryId(
+      sherryId,
+      userId,
+      SherryRole.OWNER,
+    );
+
+    if (!permission) {
+      throw new ForbiddenException('User should have owner permission to delete sherry.');
+    }
+    await this.sherryRepository.delete(sherry.sherryId);
+
+    const sherryUserIds = sherry.sherryPermission.map(
+      (sherryPermission) => sherryPermission.userId,
+    );
+    await this.eventService.sendEvent(
+      EventTypes.ACCESS_REMOVED,
+      sherryUserIds,
+      permission,
+    );
+
+    return sherry;
+  }
 
   async updatePermission(
     ownerId: string,
@@ -67,6 +101,12 @@ export class SherryService {
     if (dto.allowedFileTypes && dto.allowedFileTypes.length > 0) {
       await this.createFileTypes(sherry.sherryId, dto.allowedFileTypes);
     }
+
+    await this.sherryRepository.createRole({
+      sherryId: sherry.sherryId,
+      userId,
+      role: SherryRole.OWNER,
+    });
 
     return this.getById(userId, sherry.sherryId);
   }

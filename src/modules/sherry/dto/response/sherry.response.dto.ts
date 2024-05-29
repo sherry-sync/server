@@ -2,6 +2,7 @@ import { Sherry } from '@prisma/client';
 import { Expose, plainToClass } from 'class-transformer';
 
 import { FileNameResponseDto, FileTypeResponseDto } from '@modules/sherry/dto/response';
+import { PermissionsResponseDto } from '@modules/sherry/dto/response/permissions-response.dto';
 
 export class SherryResponseDto {
   @Expose()
@@ -24,6 +25,9 @@ export class SherryResponseDto {
 
   @Expose()
     allowedFileNames: FileNameResponseDto;
+
+  @Expose()
+    sherryPermission: PermissionsResponseDto;
 
   static mapFrom(data: Sherry): SherryResponseDto {
     return plainToClass(SherryResponseDto, data, { excludeExtraneousValues: true });
