@@ -8,6 +8,7 @@ import { JWTAuthGuard } from '@shared/guards';
 import { HttpUserPayload } from '@shared/types';
 
 import { PatchMeRequestDto } from '@modules/user/dto';
+import { FindUserDto } from '@modules/user/dto/find-user.request.dto';
 import { UserService } from '@modules/user/user.service';
 
 @Controller('user')
@@ -31,7 +32,13 @@ export class UserController {
   @Get('find')
   @HttpCode(200)
   @UseGuards(JWTAuthGuard)
-  async findUsers(@Query('username') username: string) {
-    return this.userService.find({ where: { username: { contains: username } } });
+  async findUser(@Query() query: FindUserDto) {
+    return this.userService.find({
+      where: {
+        ...query.username && { username: { contains: query.username } },
+        ...query.email && { email: { contains: query.email } },
+        ...query.userId && { userId: query.userId },
+      },
+    });
   }
 }

@@ -1,5 +1,5 @@
 import {
-  ConflictException, ForbiddenException, Injectable, NotFoundException,
+  ForbiddenException, Injectable, NotFoundException,
 } from '@nestjs/common';
 import { FileName, FileType, SherryRole } from '@prisma/client';
 
@@ -40,12 +40,8 @@ export class SherryService {
     const sherryUserIds = sherry.sherryPermission.map(
       (sherryPermission) => sherryPermission.userId,
     );
-    await this.eventService.sendEvent(
-      EventTypes.ACCESS_REMOVED,
-      sherryUserIds,
-      permission,
-    );
 
+    this.eventService.sendEvent(EventTypes.FOLDER_DELETED, sherryUserIds, sherry);
     return sherry;
   }
 
@@ -63,21 +59,21 @@ export class SherryService {
     if (data.action === SherryPermissionAction.GRANT) {
       const existingPermission = sherry.sherryPermission.find((perm) => perm.userId === userId);
       if (existingPermission) {
-        throw new ConflictException(`Permission user for ${userId} already exists`);
+        await this.sherryRepository.deleteRole(existingPermission.sherryPermissionId);
       }
       const permission = await this.sherryRepository.createRole({
         sherryId,
         userId,
         role: data.role,
       });
-      await this.eventService.sendEvent(EventTypes.ACCESS_GRANTED, [userId], permission);
+      this.eventService.sendEvent(EventTypes.FOLDER_PERMISSION_GRANTED, [userId], permission);
       return permission;
     }
     const permission = sherry.sherryPermission.find((perm) => perm.userId === userId);
     if (!permission) {
       throw new NotFoundException(`Role for user ${userId} does not exist`);
     }
-    await this.eventService.sendEvent(EventTypes.ACCESS_REMOVED, [userId], permission);
+    this.eventService.sendEvent(EventTypes.FOLDER_PERMISSION_REVOKED, [userId], permission);
     return this.sherryRepository.deleteRole(permission.sherryPermissionId);
   }
 
@@ -108,7 +104,9 @@ export class SherryService {
       role: SherryRole.OWNER,
     });
 
-    return this.getById(userId, sherry.sherryId);
+    const folder = await this.getById(userId, sherry.sherryId);
+    this.eventService.sendEvent(EventTypes.FOLDER_CREATED, [userId], folder);
+    return folder;
   }
 
   async getById(userId: string, sherryId: string): Promise<SherryResponseDto> {
@@ -168,6 +166,9 @@ export class SherryService {
     if (data.allowedFileTypes && data.allowedFileTypes.length > 0) {
       await this.recreateFileTypes(sherryId, data.allowedFileTypes);
     }
-    return this.getById(userId, sherryId);
+
+    const folder = await this.getById(userId, sherryId);
+    this.eventService.sendEvent(EventTypes.FOLDER_UPDATED, [userId], folder);
+    return folder;
   }
 }

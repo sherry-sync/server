@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { defaultPort } from '@common/constants';
+import { defaultPort, defaultWSPort } from '@common/constants';
 
 class AppConfig {
   constructor(private environment: { [k: string]: string | undefined }) {}
@@ -30,6 +30,10 @@ class AppConfig {
 
   getPort(): string | number {
     return this.getValue('PORT', false) || defaultPort;
+  }
+
+  getWSPort(): string | number {
+    return this.getValue('WS_PORT', false) || defaultWSPort;
   }
 
   getFrontApiLink(): string {

@@ -50,7 +50,11 @@ export class UserService {
     return this.userRepository.findAll();
   }
 
-  async find(query: Prisma.UserFindManyArgs): Promise<UserResponseDto[]> {
-    return this.userRepository.findMany(query);
+  async find(query: Prisma.UserFindFirstArgs): Promise<UserResponseDto | null> {
+    const user = await this.userRepository.findOne(query);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return UserResponseDto.mapFrom(user);
   }
 }

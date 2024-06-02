@@ -7,11 +7,11 @@ import {
 } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 
+import { appConfig } from '@shared/configs';
+
 import { EventService } from '@modules/event/event.service';
 
-@WebSocketGateway({
-  transports: 'websocket',
-})
+@WebSocketGateway(+appConfig.getWSPort(), {})
 export class EventGateway implements OnGatewayConnection {
   @WebSocketServer()
   // Eslint marks "server" as unused
