@@ -28,7 +28,10 @@ export class AuthService {
     if (existingUser) {
       throw new ConflictException('User already exists');
     }
-    const user = await this.userService.create({ ...dto, password: hashedPassword });
+    const user = await this.userService.create({
+      ...dto,
+      password: hashedPassword,
+    });
 
     return UserResponseDto.mapFrom(user);
   }
@@ -47,7 +50,10 @@ export class AuthService {
     const accessToken = await this.getJwtToken(user.userId);
     const refreshToken = await this.getRefreshJwtToken(user.userId);
     return SignInResponseDto.mapFrom({
-      ...user, accessToken, refreshToken,
+      ...user,
+      accessToken,
+      refreshToken,
+      expiresIn: this.jwtService.decode(accessToken).exp,
     });
   }
 
@@ -65,7 +71,12 @@ export class AuthService {
     const accessToken = await this.getJwtToken(userId);
     const newRefreshToken = await this.getRefreshJwtToken(userId);
 
-    return SignInResponseDto.mapFrom({ ...user, accessToken, refreshToken: newRefreshToken });
+    return SignInResponseDto.mapFrom({
+      ...user,
+      accessToken,
+      refreshToken: newRefreshToken,
+      expiresIn: this.jwtService.decode(accessToken).exp,
+    });
   }
 
   verifyToken(token: string, options?: JwtVerifyOptions): HttpUserPayload {
