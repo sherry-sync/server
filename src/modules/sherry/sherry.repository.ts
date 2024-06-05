@@ -25,7 +25,11 @@ export class SherryRepository {
     role: SherryRole,
   ): Promise<SherryPermission | null> {
     return this.prisma.sherryPermission.findFirst({
-      where: { userId, sherryId, role },
+      where: {
+        userId,
+        sherryId,
+        role,
+      },
     });
   }
 
@@ -37,7 +41,7 @@ export class SherryRepository {
 
   async getAllByUserId(userId: string): Promise<Sherry[]> {
     return this.prisma.sherry.findMany({
-      where: { userId },
+      where: { sherryPermission: { some: { userId } } },
       include: {
         allowedFileNames: true,
         allowedFileTypes: true,
@@ -61,7 +65,10 @@ export class SherryRepository {
     }
   }> | null> {
     return this.prisma.sherry.findUnique({
-      where: { userId, sherryId },
+      where: {
+        sherryPermission: { some: { userId } },
+        sherryId,
+      },
       include: {
         allowedFileNames: true,
         allowedFileTypes: true,
