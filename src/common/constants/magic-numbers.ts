@@ -1,6 +1,7 @@
 // common
 
 export const defaultPort = 3000;
+export const defaultWSPort = 3001;
 
 // crypto
 export const cryptoIterations = 1000;

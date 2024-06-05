@@ -19,6 +19,9 @@ export class SignInResponseDto {
   @Expose()
     refreshToken: string;
 
+  @Expose()
+    expiresIn: number;
+
   static mapFrom(data: User & TokenPair): SignInResponseDto {
     return plainToClass(SignInResponseDto, data, { excludeExtraneousValues: true });
   }

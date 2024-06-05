@@ -56,15 +56,16 @@ model FileName {
 
 model SherryPermission {
   sherryPermissionId String     @id @default(uuid()) @db.Uuid
-  role               SherryRole @default(SHER)
+  role               SherryRole @default(READ)
 
   sherryId String @db.Uuid
-  Sherry   Sherry @relation(fields: [sherryId], references: [sherryId])
+  Sherry   Sherry @relation(fields: [sherryId], references: [sherryId], onDelete: Cascade)
   userId   String @db.Uuid
   User     User   @relation(fields: [userId], references: [userId])
 }
 
 enum SherryRole {
+  READ
+  WRITE
   OWNER
-  SHER
 }

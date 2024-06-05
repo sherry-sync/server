@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, UseGuards,
+  Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, UseGuards,
 } from '@nestjs/common';
 
 import { HttpUser } from '@shared/decorators';
@@ -29,6 +29,17 @@ export class SherryController {
       @Body() createDto: CreateSherryDto,
   ): Promise<SherryResponseDto> {
     return this.sherryService.create(user.userId, createDto);
+  }
+
+  @Delete(':sherryId')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JWTAuthGuard)
+  async delete(
+    @HttpUser() user: HttpUserPayload,
+      @Param('sherryId', ParseUUIDPipe) sherryId: string,
+  ): Promise<boolean> {
+    await this.sherryService.delete(user.userId, sherryId);
+    return true;
   }
 
   @Get(':sherryId')
