@@ -35,7 +35,7 @@ export class FileService {
     switch (eventType) {
       case FileEvents.CREATED: {
         this.saveFile(file, filePath);
-        await this.eventService.sendEvent(EventTypes.FILE_ADDED, userIdsExceptInitiator, {
+        this.eventService.sendEvent(EventTypes.FILE_FILE_CREATED, userIdsExceptInitiator, {
           sherryId,
           filePath,
         });
@@ -43,7 +43,7 @@ export class FileService {
       }
       case FileEvents.UPDATED: {
         this.saveFile(file, filePath);
-        await this.eventService.sendEvent(EventTypes.FILE_CHANGED, userIdsExceptInitiator, {
+        this.eventService.sendEvent(EventTypes.FILE_FILE_UPDATED, userIdsExceptInitiator, {
           sherryId,
           filePath,
         });
@@ -51,7 +51,7 @@ export class FileService {
       }
       case FileEvents.DELETED: {
         this.deleteFile(filePath);
-        await this.eventService.sendEvent(EventTypes.FILE_REMOVED, userIdsExceptInitiator, {
+        this.eventService.sendEvent(EventTypes.FILE_FILE_DELETED, userIdsExceptInitiator, {
           sherryId,
           filePath,
         });
