@@ -1,7 +1,9 @@
 import {
   ForbiddenException, Injectable, NotFoundException,
 } from '@nestjs/common';
-import { FileName, FileType, SherryRole } from '@prisma/client';
+import {
+  FileName, FileType, SherryRole,
+} from '@prisma/client';
 
 import { EventTypes, SherryPermissionAction } from '@shared/enums';
 
@@ -21,7 +23,7 @@ export class SherryService {
     userId: string,
     sherryId: string,
   ) {
-    const sherry = await this.sherryRepository.getById(userId, sherryId);
+    const sherry = await this.sherryRepository.getById(sherryId, userId);
     if (!sherry) {
       throw new NotFoundException(`Sherry with id ${sherryId} does not exists.`);
     }
@@ -45,13 +47,26 @@ export class SherryService {
     return sherry;
   }
 
+  async canInteractWithSherry(sherryId: string, userId: string): Promise<boolean> {
+    const permission = await this.sherryRepository.getPermissionBySherryId(sherryId, userId);
+    return !!permission;
+  }
+
+  async getSherryUsers(sherryId: string): Promise<string[]> {
+    const sherry = await this.sherryRepository.getById(sherryId);
+    if (!sherry) {
+      throw new NotFoundException(`Sherry with id ${sherryId} does not exists.`);
+    }
+    return sherry.sherryPermission.map((perm) => perm.userId);
+  }
+
   async updatePermission(
     ownerId: string,
     sherryId: string,
     userId: string,
     data: UpdateSherryPermissionDto,
   ) {
-    const sherry = await this.sherryRepository.getById(ownerId, sherryId);
+    const sherry = await this.sherryRepository.getById(sherryId, ownerId);
     if (!sherry) {
       throw new NotFoundException(`Sherry with id ${sherryId} does not exists.`);
     }
@@ -110,7 +125,7 @@ export class SherryService {
   }
 
   async getById(userId: string, sherryId: string): Promise<SherryResponseDto> {
-    const sherry = await this.sherryRepository.getById(userId, sherryId);
+    const sherry = await this.sherryRepository.getById(sherryId, userId);
     if (!sherry) {
       throw new NotFoundException(`Sherry with id ${sherryId} does not exists.`);
     }
@@ -150,7 +165,7 @@ export class SherryService {
     sherryId: string,
     data: UpdateSherryDto,
   ): Promise<SherryResponseDto> {
-    const sherry = await this.sherryRepository.getById(userId, sherryId);
+    const sherry = await this.sherryRepository.getById(sherryId, userId);
     if (!sherry) {
       throw new NotFoundException(`Sherry with id ${sherryId} does not exists.`);
     }

@@ -22,7 +22,7 @@ export class SherryRepository {
   async getPermissionBySherryId(
     sherryId: string,
     userId: string,
-    role: SherryRole,
+    role?: SherryRole,
   ): Promise<SherryPermission | null> {
     return this.prisma.sherryPermission.findFirst({
       where: {
@@ -57,7 +57,7 @@ export class SherryRepository {
     });
   }
 
-  async getById(userId: string, sherryId: string): Promise<Prisma.SherryGetPayload<{
+  async getById(sherryId: string, userId?: string): Promise<Prisma.SherryGetPayload<{
     include: {
       allowedFileNames: true,
       allowedFileTypes: true,

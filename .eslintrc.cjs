@@ -22,6 +22,7 @@ module.exports = {
     'simple-import-sort'
   ],
   rules: {
+    '@typescript-eslint/no-explicit-any': 'off',
     "simple-import-sort/imports": "error",
     "simple-import-sort/exports": "error",
     'typescript-eslint/ban-types': 'off',
@@ -29,7 +30,8 @@ module.exports = {
     "import/newline-after-import": "error",
     "import/no-duplicates": "error",
     "unicorn/prefer-module": "off",
-    "unicorn/no-abusive-eslint-disable": "off"
+    "unicorn/no-abusive-eslint-disable": "off",
+    "unicorn/no-null": "off"
   },
   overrides: [{
     files: ['**/*.ts'],
