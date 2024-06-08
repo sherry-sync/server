@@ -3,8 +3,8 @@ import { JwtService } from '@nestjs/jwt';
 import { Socket } from 'socket.io';
 
 import { EventTypes } from '@shared/enums';
+import { usersSocketStore } from '@shared/services';
 import { HttpUserPayload } from '@shared/types';
-import {usersSocketStore} from '@shared/services';
 
 @Injectable()
 export class EventService {

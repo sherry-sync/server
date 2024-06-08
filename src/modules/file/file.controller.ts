@@ -1,12 +1,17 @@
 import {
+  Body,
   Controller, HttpCode, HttpStatus, Post, UploadedFile, UseGuards, UseInterceptors,
 } from '@nestjs/common';
-import { File } from 'fastify-multer/lib/interfaces';
 
+import { HttpUser } from '@shared/decorators';
 import { JWTAuthGuard } from '@shared/guards';
-import { SingleFileInterceptor } from '@shared/interseptors';
+import { FastifyFileInterceptor } from '@shared/interseptors';
+import { HttpUserPayload } from '@shared/types';
 
+import { FileEventDto } from '@modules/file/dto';
 import { FileService } from '@modules/file/file.service';
+import { File } from '@modules/file/types';
+import {multerOptions} from '@shared/configs';
 
 @Controller('file')
 export class FileController {
@@ -17,12 +22,16 @@ export class FileController {
   @Post('event')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JWTAuthGuard)
-  @UseInterceptors(SingleFileInterceptor('file', 'uploads'))
+  @UseInterceptors(FastifyFileInterceptor('file', multerOptions))
   async createFileEvent(
-  @UploadedFile() file: File,
+  @HttpUser() user: HttpUserPayload,
+    @UploadedFile() file: File,
+    @Body() fileEventDto: FileEventDto,
   ) {
     await this.fileService.storeFile(
-      file as unknown as { path: string; originalName: string; mimeType: string },
+      file,
+      fileEventDto,
+      user,
     );
   }
 }

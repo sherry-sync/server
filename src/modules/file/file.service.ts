@@ -1,14 +1,73 @@
-import { Injectable } from '@nestjs/common';
+import * as fs from 'node:fs';
+
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+
+import { EventTypes, FileEvents } from '@shared/enums';
+import { HttpUserPayload } from '@shared/types';
+
+import { EventService } from '@modules/event';
+import { FileEventDto } from '@modules/file/dto';
+import { File } from '@modules/file/types';
+import { SherryService } from '@modules/sherry/sherry.service';
 
 @Injectable()
 export class FileService {
-  async storeFile(file: { path: string; originalName: string; mimeType: string }) {
-    console.log(file);
-    // const { originalName } = file;
-    // const filePath = `${__dirname}/../../../uploads/${originalName}`;
-    //
-    // const buffer = await util.promisify(fs.readFile)(file.path);
+  constructor(
+    private readonly sherryService: SherryService,
+    private readonly eventService: EventService,
+  ) {}
 
-    // fs.writeFileSync(filePath, buffer);
+  async buildFilePath(sherryId: string, filename: string) {
+    return `${__dirname}/../../../uploads/${sherryId}-${filename}`;
+  }
+
+  async storeFile(file: File, dto: FileEventDto, user: HttpUserPayload) {
+    const { eventType, sherryId } = dto;
+    const { userId } = user;
+    if (!await this.sherryService.canInteractWithSherry(sherryId, userId)) {
+      throw new ForbiddenException(`Access to sherry ${sherryId} not allowed`);
+    }
+    const userIds = await this.sherryService.getSherryUsers(sherryId);
+    const userIdsExceptInitiator = userIds.filter((id) => id !== userId);
+
+    const filePath = await this.buildFilePath(sherryId, file.originalname);
+
+    switch (eventType) {
+      case FileEvents.CREATED: {
+        this.saveFile(file, filePath);
+        await this.eventService.sendEvent(EventTypes.FILE_ADDED, userIdsExceptInitiator, {
+          sherryId,
+          filePath,
+        });
+        break;
+      }
+      case FileEvents.UPDATED: {
+        this.saveFile(file, filePath);
+        await this.eventService.sendEvent(EventTypes.FILE_CHANGED, userIdsExceptInitiator, {
+          sherryId,
+          filePath,
+        });
+        break;
+      }
+      case FileEvents.DELETED: {
+        this.deleteFile(filePath);
+        await this.eventService.sendEvent(EventTypes.FILE_REMOVED, userIdsExceptInitiator, {
+          sherryId,
+          filePath,
+        });
+        break;
+      }
+      default: {
+        throw new NotFoundException(`Event type ${eventType} not supported`);
+      }
+    }
+  }
+
+  deleteFile(filepath: string) {
+    fs.unlinkSync(filepath);
+  }
+
+  saveFile(file: File, filePath: string) {
+    fs.writeFileSync(filePath, file.buffer);
   }
 }
