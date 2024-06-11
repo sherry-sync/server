@@ -12,6 +12,12 @@ export class CryptoService {
 
   private ENCODING: BufferEncoding = 'hex';
 
+  getHash(buff: Buffer): string {
+    const hash = crypto.createHash('sha256');
+    hash.update(buff);
+    return hash.digest('base64');
+  }
+
   async encryptString(password: string): Promise<string> {
     const salt = crypto.randomBytes(this.BYTES_LEN).toString(this.ENCODING);
     const pepper = appConfig.getPepper();

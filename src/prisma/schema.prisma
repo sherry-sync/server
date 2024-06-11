@@ -36,6 +36,7 @@ model Sherry {
   userId           String             @db.Uuid
   User             User               @relation(fields: [userId], references: [userId])
   sherryPermission SherryPermission[]
+  SherryFile       SherryFile[]
 
   @@unique([userId, name])
 }
@@ -62,6 +63,21 @@ model SherryPermission {
   Sherry   Sherry @relation(fields: [sherryId], references: [sherryId], onDelete: Cascade)
   userId   String @db.Uuid
   User     User   @relation(fields: [userId], references: [userId])
+}
+
+model SherryFile {
+  sherryFileId String @id @default(uuid()) @db.Uuid
+
+  size    Int    @default(0) @db.Integer
+  path    String @unique @db.VarChar()
+  oldPath String @db.VarChar()
+  hash    String @db.VarChar()
+
+  createdAt DateTime @default(now()) @db.Timestamptz()
+  updatedAt DateTime @updatedAt @db.Timestamptz()
+
+  sherryId String @db.Uuid
+  Sherry   Sherry @relation(fields: [sherryId], references: [sherryId], onDelete: Cascade)
 }
 
 enum SherryRole {

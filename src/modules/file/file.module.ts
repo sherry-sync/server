@@ -3,9 +3,11 @@ import { JwtModule } from '@nestjs/jwt';
 
 import { appConfig } from '@shared/configs';
 import { PrismaService } from '@shared/services';
+import { CryptoService } from '@shared/services/crypto.service';
 
 import { EventService } from '@modules/event';
 import { FileController } from '@modules/file/file.controller';
+import { FileRepository } from '@modules/file/file.repository';
 import { FileService } from '@modules/file/file.service';
 import { SherryRepository } from '@modules/sherry/sherry.repository';
 import { SherryService } from '@modules/sherry/sherry.service';
@@ -18,6 +20,14 @@ import { SherryService } from '@modules/sherry/sherry.service';
     }),
   ],
   controllers: [FileController],
-  providers: [FileService, PrismaService, SherryService, SherryRepository, EventService],
+  providers: [
+    FileService,
+    PrismaService,
+    SherryService,
+    SherryRepository,
+    EventService,
+    FileRepository,
+    CryptoService,
+  ],
 })
 export class FileModule {}
