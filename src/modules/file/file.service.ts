@@ -1,19 +1,27 @@
 import * as fs from 'node:fs';
 
 import {
-  ConflictException, ForbiddenException, Injectable, NotFoundException,
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { EventTypes, FileEvents } from '@shared/enums';
-import { CryptoService } from '@shared/services/crypto.service';
 import { HttpUserPayload } from '@shared/types';
 
 import { EventService } from '@modules/event';
 import { FileEventDto } from '@modules/file/dto';
 import { FileRepository } from '@modules/file/file.repository';
-import { trimFileName } from '@modules/file/helpers';
-import { File } from '@modules/file/types';
+import {
+  CreateFileEvent,
+  File,
+  isCreateFileEvent, isMoveFileEvent,
+  isUpdateFileEvent,
+  UpdateFileEvent,
+} from '@modules/file/types';
 import { SherryService } from '@modules/sherry/sherry.service';
 
 @Injectable()
@@ -24,11 +32,10 @@ export class FileService {
     private readonly sherryService: SherryService,
     private readonly eventService: EventService,
     private readonly fileRepository: FileRepository,
-    private readonly cryptoService: CryptoService,
   ) {}
 
-  async buildFilePath(sherryId: string, filename: string) {
-    return `${__dirname}/../../../${this.baseFolder}/${sherryId}-${filename}`;
+  buildFilePath(sherryId: string, fileId: string) {
+    return `${this.baseFolder}/${sherryId}-${fileId}`;
   }
 
   async storeFile(file: File, dto: FileEventDto, user: HttpUserPayload) {
@@ -40,37 +47,57 @@ export class FileService {
     const userIds = await this.sherryService.getSherryUsers(sherryId);
     const userIdsExceptInitiator = userIds.filter((id) => id !== userId);
 
-    const filePath = await this.buildFilePath(sherryId, file.originalname);
-
     switch (eventType) {
       case FileEvents.CREATED: {
-        await this.saveFile(file, {
+        if (!isCreateFileEvent(dto) || !file) {
+          throw new BadRequestException('File event not processable');
+        }
+        const savedFile = await this.saveFile(file, {
           sherryId,
-          path: filePath,
-          hash: this.cryptoService.getHash(file.buffer),
-          size: file.buffer.toString().length,
-          oldPath: '',
+          fileType: dto.fileType,
+          path: dto.path,
+          hash: dto.hash,
+          size: dto.size,
+          oldPath: dto.oldPath || '',
         });
         this.eventService.sendEvent(EventTypes.FILE_FILE_CREATED, userIdsExceptInitiator, {
           sherryId,
-          filePath,
+          filePath: savedFile.path,
         });
         break;
       }
       case FileEvents.UPDATED: {
-        await this.updateFile(file, sherryId);
+        if (!isUpdateFileEvent(dto) || !file) {
+          throw new BadRequestException('File event not processable');
+        }
+        const updatedFile = await this.updateFile(file, dto);
 
         this.eventService.sendEvent(EventTypes.FILE_FILE_UPDATED, userIdsExceptInitiator, {
           sherryId,
-          filePath,
+          filePath: updatedFile.path,
         });
         break;
       }
       case FileEvents.DELETED: {
-        await this.deleteFile(filePath);
+        const deletedFile = await this.deleteFile(sherryId, dto.path);
         this.eventService.sendEvent(EventTypes.FILE_FILE_DELETED, userIdsExceptInitiator, {
           sherryId,
-          filePath,
+          filePath: deletedFile.path,
+        });
+        break;
+      }
+      case FileEvents.MOVED: {
+        if (!isMoveFileEvent(dto)) {
+          throw new BadRequestException('File event not processable');
+        }
+        const movedFile = await this.moveFile(sherryId, dto.path, dto.oldPath);
+        if (!movedFile) {
+          throw new ConflictException('File rename failed');
+        }
+        this.eventService.sendEvent(EventTypes.FILE_FILE_MOVED, userIdsExceptInitiator, {
+          sherryId,
+          filePath: movedFile.path,
+          oldPath: movedFile.oldPath,
         });
         break;
       }
@@ -80,43 +107,53 @@ export class FileService {
     }
   }
 
-  async deleteFile(filepath: string) {
-    await this.fileRepository.deleteByPath(filepath);
-    fs.unlinkSync(filepath);
+  async moveFile(sherryId: string, filePath: string, oldPath: string) {
+    const savedFile = await this.fileRepository.getByPath(oldPath);
+    if (!savedFile) {
+      throw new NotFoundException(`File with path ${oldPath} does not exists`);
+    }
+    return this.fileRepository.update(oldPath, {
+      path: filePath,
+      oldPath,
+    });
   }
 
-  async updateFile(file: File, sherryId: string) {
-    const filePath = await this.buildFilePath(sherryId, file.originalname);
+  async deleteFile(sherryId: string, filePath: string) {
+    const savedFile = await this.fileRepository.getByPath(filePath);
+    if (!savedFile) {
+      throw new NotFoundException(`File with path ${filePath} does not exists`);
+    }
+    await this.fileRepository.deleteByPath(savedFile.path);
+    fs.unlinkSync(this.buildFilePath(sherryId, savedFile.sherryFileId));
+    return savedFile;
+  }
 
-    const existingFile = await this.fileRepository.getByPath(filePath);
+  async updateFile(file: File, data: UpdateFileEvent | CreateFileEvent) {
+    const existingFile = await this.fileRepository.getByPath(data.path);
     if (!existingFile) {
       throw new NotFoundException(`File with path ${file.path} does not exist`);
     }
 
-    if (existingFile && file.path !== existingFile.path) {
-      await this.deleteFile(file.path);
-    }
+    const builtFilePath = this.buildFilePath(existingFile.sherryId, existingFile.path);
+    fs.unlinkSync(builtFilePath);
+    fs.writeFileSync(file.buffer, builtFilePath);
 
-    await this.saveFile(file, {
-      sherryId,
-      path: filePath,
-      hash: this.cryptoService.getHash(file.buffer),
-      oldPath: trimFileName(this.baseFolder, existingFile.path),
-      size: file.buffer.toString().length,
-    });
+    const updatedFile = await this.fileRepository.update(existingFile.path, data);
+    if (!updatedFile) {
+      throw new ConflictException('File update failed ');
+    }
+    return updatedFile;
   }
 
   async saveFile(file: File, data: Prisma.SherryFileUncheckedCreateInput) {
-    const trimmedPath = trimFileName(this.baseFolder, data.path);
-    const existingFile = await this.fileRepository.getByPath(trimmedPath);
+    const existingFile = await this.fileRepository.getByPath(data.path);
     if (existingFile) {
-      throw new ConflictException(`File with path ${trimmedPath} already exists`);
+      throw new ConflictException(`File with path ${data.path} already exists`);
     }
 
-    await this.fileRepository.create({
-      ...data,
-      path: trimmedPath,
-    });
-    fs.writeFileSync(data.path, file.buffer);
+    const savedFile = await this.fileRepository.create(data);
+    const createdPath = this.buildFilePath(savedFile.sherryId, savedFile.sherryFileId);
+    fs.writeFileSync(createdPath, file.buffer);
+    return savedFile;
   }
 }

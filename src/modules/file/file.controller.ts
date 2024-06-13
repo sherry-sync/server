@@ -3,6 +3,7 @@ import {
   Controller, HttpCode, HttpStatus, Post, UploadedFile, UseGuards, UseInterceptors,
 } from '@nestjs/common';
 
+import { multerOptions } from '@shared/configs';
 import { HttpUser } from '@shared/decorators';
 import { JWTAuthGuard } from '@shared/guards';
 import { FastifyFileInterceptor } from '@shared/interseptors';
@@ -11,7 +12,6 @@ import { HttpUserPayload } from '@shared/types';
 import { FileEventDto } from '@modules/file/dto';
 import { FileService } from '@modules/file/file.service';
 import { File } from '@modules/file/types';
-import {multerOptions} from '@shared/configs';
 
 @Controller('file')
 export class FileController {
@@ -30,7 +30,12 @@ export class FileController {
   ) {
     await this.fileService.storeFile(
       file,
-      fileEventDto,
+      {
+        ...fileEventDto,
+        path: `${fileEventDto.sherryId}-${fileEventDto.path}`,
+        oldPath: `${fileEventDto.sherryId}-${fileEventDto.oldPath}`,
+        size: fileEventDto.size ? +fileEventDto.size : 0,
+      },
       user,
     );
   }

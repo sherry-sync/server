@@ -68,10 +68,11 @@ model SherryPermission {
 model SherryFile {
   sherryFileId String @id @default(uuid()) @db.Uuid
 
-  size    Int    @default(0) @db.Integer
-  path    String @unique @db.VarChar()
-  oldPath String @db.VarChar()
-  hash    String @db.VarChar()
+  size     Int    @default(0) @db.Integer
+  path     String @unique @db.VarChar()
+  oldPath  String @db.VarChar()
+  hash     String @db.VarChar()
+  fileType String @default(".txt") @db.VarChar()
 
   createdAt DateTime @default(now()) @db.Timestamptz()
   updatedAt DateTime @updatedAt @db.Timestamptz()
