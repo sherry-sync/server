@@ -134,11 +134,16 @@ export class FileService {
       throw new NotFoundException(`File with path ${file.path} does not exist`);
     }
 
-    const builtFilePath = this.buildFilePath(existingFile.sherryId, existingFile.path);
+    const builtFilePath = this.buildFilePath(existingFile.sherryId, existingFile.sherryFileId);
     fs.unlinkSync(builtFilePath);
-    fs.writeFileSync(file.buffer, builtFilePath);
+    fs.writeFileSync(builtFilePath, file.buffer);
 
-    const updatedFile = await this.fileRepository.update(existingFile.path, data);
+    const updatedFile = await this.fileRepository.update(existingFile.path, {
+      fileType: data.fileType,
+      path: data.path,
+      hash: data.hash,
+      size: data.size,
+    });
     if (!updatedFile) {
       throw new ConflictException('File update failed ');
     }
