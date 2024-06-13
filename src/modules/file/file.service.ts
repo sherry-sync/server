@@ -13,12 +13,13 @@ import { EventTypes, FileEvents } from '@shared/enums';
 import { HttpUserPayload } from '@shared/types';
 
 import { EventService } from '@modules/event';
-import { FileEventDto } from '@modules/file/dto';
+import { FileEventDto, VerifyFileActionDto } from '@modules/file/dto';
 import { FileRepository } from '@modules/file/file.repository';
 import {
   CreateFileEvent,
   File,
-  isCreateFileEvent, isMoveFileEvent,
+  isCreateFileEvent,
+  isMoveFileEvent,
   isUpdateFileEvent,
   UpdateFileEvent,
 } from '@modules/file/types';
@@ -38,8 +39,101 @@ export class FileService {
     return `${this.baseFolder}/${sherryId}-${fileId}`;
   }
 
-  async getFilesBySherryId(sherryId: string, user: HttpUserPayload) {
+  async verifyFileAction(user: HttpUserPayload, dto: VerifyFileActionDto) {
     const { userId } = user;
+    if (!await this.sherryService.canInteractWithSherry(dto.sherryId, userId)) {
+      throw new ForbiddenException(`Access to sherry ${dto.sherryId} not allowed`);
+    }
+
+    switch (dto.eventType) {
+      case FileEvents.CREATED: {
+        await this.verifyCreateAction(userId, dto);
+        break;
+      }
+      case FileEvents.DELETED: {
+        await this.verifyDeleteAction(userId, dto);
+        break;
+      }
+      case FileEvents.MOVED: {
+        await this.verifyMoveAction(userId, dto);
+        break;
+      }
+      case FileEvents.UPDATED: {
+        await this.verifyUpdateAction(userId, dto);
+        break;
+      }
+      default: {
+        throw new NotFoundException(`Event type ${dto.eventType} not supported`);
+      }
+    }
+  }
+
+  async verifyUpdateAction(userId: string, dto: VerifyFileActionDto) {
+    const existingFile = await this.fileRepository.getByPathAndSherryId(dto.sherryId, dto.path);
+    if (!existingFile) {
+      throw new ConflictException(`File with path ${dto.path} does not exists`);
+    }
+
+    if (dto.hash === existingFile.hash) {
+      throw new ConflictException('Hash does not changed');
+    }
+
+    await this.verifyFileRules(userId, dto);
+  }
+
+  async verifyMoveAction(userId: string, dto: VerifyFileActionDto) {
+    if (dto.oldPath === dto.path) {
+      throw new ConflictException('Old and new path cannot be the same');
+    }
+    const existingFile = await this.fileRepository.getByPathAndSherryId(dto.sherryId, dto.path);
+    if (existingFile) {
+      throw new ConflictException(`File with path ${dto.path} already exists`);
+    }
+    const fileInOldPath = await this.fileRepository.getByPathAndSherryId(dto.sherryId, dto.oldPath);
+    if (!fileInOldPath) {
+      throw new ConflictException(`File with path ${dto.oldPath} does not exists`);
+    }
+  }
+
+  async verifyDeleteAction(userId: string, dto: VerifyFileActionDto) {
+    if (!dto.path) {
+      throw new BadRequestException('path is not provided');
+    }
+    const existingFile = await this.fileRepository.getByPathAndSherryId(dto.sherryId, dto.path);
+    if (!existingFile) {
+      throw new ConflictException(`File with path ${dto.path} does not exist`);
+    }
+  }
+
+  async verifyFileRules(userId: string, dto: VerifyFileActionDto) {
+    const sherry = await this.sherryService.getById(userId, dto.sherryId);
+    const files = await this.getFilesBySherryId(sherry.sherryId, userId);
+    const allFilesSize = files.reduce((accumulator, element) => accumulator + element.size, 0);
+    if (dto.size && sherry.maxDirSize < allFilesSize + dto.size) {
+      throw new ConflictException(`Sherry max dir size is ${sherry.maxDirSize}`);
+    }
+    if (dto.size > sherry.maxFileSize) {
+      throw new ConflictException(`Sherry max file size is ${sherry.maxFileSize}`);
+    }
+
+    if (!dto.path || !sherry.allowedFileNames.some(({ name }) => dto.path.match(name))) {
+      throw new ConflictException('filename should match sherry settings');
+    }
+  }
+
+  async verifyCreateAction(userId: string, dto: VerifyFileActionDto) {
+    if (!dto.path) {
+      throw new BadRequestException('path is not provided');
+    }
+    const existingFile = await this.fileRepository.getByPathAndSherryId(dto.sherryId, dto.path);
+    if (existingFile) {
+      throw new ConflictException(`File with path ${dto.path} already exists`);
+    }
+
+    await this.verifyFileRules(userId, dto);
+  }
+
+  async getFilesBySherryId(sherryId: string, userId: string) {
     if (!await this.sherryService.canInteractWithSherry(sherryId, userId)) {
       throw new ForbiddenException(`Access to sherry ${sherryId} not allowed`);
     }

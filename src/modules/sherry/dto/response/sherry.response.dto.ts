@@ -27,7 +27,7 @@ export class SherryResponseDto {
     allowedFileTypes: FileTypeResponseDto;
 
   @Expose()
-    allowedFileNames: FileNameResponseDto;
+    allowedFileNames: FileNameResponseDto[];
 
   @Expose()
     sherryPermission: PermissionsResponseDto;

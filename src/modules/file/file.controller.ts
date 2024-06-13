@@ -18,7 +18,7 @@ import { JWTAuthGuard } from '@shared/guards';
 import { FastifyFileInterceptor } from '@shared/interseptors';
 import { HttpUserPayload } from '@shared/types';
 
-import { FileEventDto } from '@modules/file/dto';
+import { FileEventDto, VerifyFileActionDto } from '@modules/file/dto';
 import { FileService } from '@modules/file/file.service';
 import { File } from '@modules/file/types';
 import { GetFileInstanceQueryDto } from '@modules/sherry/dto/request';
@@ -29,6 +29,16 @@ export class FileController {
     private readonly fileService: FileService,
   ) {}
 
+  @Post('verify')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JWTAuthGuard)
+  async verifyFileAction(
+  @HttpUser() user: HttpUserPayload,
+    @Body() dto : VerifyFileActionDto,
+  ) {
+    return this.fileService.verifyFileAction(user, dto);
+  }
+
   @Get(':sherryId')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JWTAuthGuard)
@@ -36,7 +46,7 @@ export class FileController {
   @HttpUser() user: HttpUserPayload,
     @Param('sherryId', ParseUUIDPipe) sherryId: string,
   ) {
-    return this.fileService.getFilesBySherryId(sherryId, user);
+    return this.fileService.getFilesBySherryId(sherryId, user.userId);
   }
 
   @Get(':sherryId/path')
