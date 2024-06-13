@@ -1,4 +1,5 @@
 export type CreateFileEvent = {
+  sherryId: string
   fileType: string
   path: string
   size: number
@@ -7,5 +8,5 @@ export type CreateFileEvent = {
 
 export const isCreateFileEvent = (data: unknown): data is CreateFileEvent => {
   const event = data as CreateFileEvent;
-  return !!(event.fileType && event.hash && event.size && event.path);
+  return !!(event.fileType && event.hash && event.size && event.path && event.sherryId);
 };

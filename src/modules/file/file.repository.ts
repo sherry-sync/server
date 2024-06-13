@@ -11,6 +11,12 @@ export class FileRepository {
     return this.prisma.sherryFile.delete({ where: { path } });
   }
 
+  getByPathAndSherryId(sherryId: string, path: string) {
+    return this.prisma.sherryFile.findFirst({
+      where: { path, sherryId },
+    });
+  }
+
   getByPath(path: string): Promise<SherryFile | null> {
     return this.prisma.sherryFile.findFirst({
       where: { path },

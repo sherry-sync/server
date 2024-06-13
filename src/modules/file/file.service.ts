@@ -108,7 +108,7 @@ export class FileService {
   }
 
   async moveFile(sherryId: string, filePath: string, oldPath: string) {
-    const savedFile = await this.fileRepository.getByPath(oldPath);
+    const savedFile = await this.fileRepository.getByPathAndSherryId(sherryId, oldPath);
     if (!savedFile) {
       throw new NotFoundException(`File with path ${oldPath} does not exists`);
     }
@@ -119,7 +119,7 @@ export class FileService {
   }
 
   async deleteFile(sherryId: string, filePath: string) {
-    const savedFile = await this.fileRepository.getByPath(filePath);
+    const savedFile = await this.fileRepository.getByPathAndSherryId(sherryId, filePath);
     if (!savedFile) {
       throw new NotFoundException(`File with path ${filePath} does not exists`);
     }
@@ -129,9 +129,12 @@ export class FileService {
   }
 
   async updateFile(file: File, data: UpdateFileEvent | CreateFileEvent) {
-    const existingFile = await this.fileRepository.getByPath(data.path);
+    const existingFile = await this.fileRepository.getByPathAndSherryId(data.sherryId, data.path);
     if (!existingFile) {
       throw new NotFoundException(`File with path ${file.path} does not exist`);
+    }
+    if (existingFile.hash === data.hash) {
+      throw new ConflictException('Hash not changed');
     }
 
     const builtFilePath = this.buildFilePath(existingFile.sherryId, existingFile.sherryFileId);
@@ -151,7 +154,7 @@ export class FileService {
   }
 
   async saveFile(file: File, data: Prisma.SherryFileUncheckedCreateInput) {
-    const existingFile = await this.fileRepository.getByPath(data.path);
+    const existingFile = await this.fileRepository.getByPathAndSherryId(data.sherryId, data.path);
     if (existingFile) {
       throw new ConflictException(`File with path ${data.path} already exists`);
     }

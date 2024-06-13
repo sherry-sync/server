@@ -32,8 +32,6 @@ export class FileController {
       file,
       {
         ...fileEventDto,
-        path: `${fileEventDto.sherryId}-${fileEventDto.path}`,
-        oldPath: `${fileEventDto.sherryId}-${fileEventDto.oldPath}`,
         size: fileEventDto.size ? +fileEventDto.size : 0,
       },
       user,
