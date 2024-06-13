@@ -38,6 +38,35 @@ export class FileService {
     return `${this.baseFolder}/${sherryId}-${fileId}`;
   }
 
+  async getFilesBySherryId(sherryId: string, user: HttpUserPayload) {
+    const { userId } = user;
+    if (!await this.sherryService.canInteractWithSherry(sherryId, userId)) {
+      throw new ForbiddenException(`Access to sherry ${sherryId} not allowed`);
+    }
+    return this.fileRepository.getFilesBySherryId(sherryId);
+  }
+
+  async getFileByPathAndSherryId(sherryId: string, path: string, user: HttpUserPayload) {
+    const { userId } = user;
+    if (!await this.sherryService.canInteractWithSherry(sherryId, userId)) {
+      throw new ForbiddenException(`Access to sherry ${sherryId} not allowed`);
+    }
+    return this.fileRepository.getByPathAndSherryId(sherryId, path);
+  }
+
+  async getFileInstance(sherryId: string, filePath: string, user: HttpUserPayload) {
+    const { userId } = user;
+    if (!await this.sherryService.canInteractWithSherry(sherryId, userId)) {
+      throw new ForbiddenException(`Access to sherry ${sherryId} not allowed`);
+    }
+    const file = await this.fileRepository.getByPathAndSherryId(sherryId, filePath);
+    if (!file) {
+      throw new NotFoundException(`File with path ${filePath} does not exists)`);
+    }
+
+    return fs.readFileSync(this.buildFilePath(sherryId, file.sherryFileId));
+  }
+
   async storeFile(file: File, dto: FileEventDto, user: HttpUserPayload) {
     const { eventType, sherryId } = dto;
     const { userId } = user;
@@ -45,7 +74,7 @@ export class FileService {
       throw new ForbiddenException(`Access to sherry ${sherryId} not allowed`);
     }
     const userIds = await this.sherryService.getSherryUsers(sherryId);
-    const userIdsExceptInitiator = userIds.filter((id) => id !== userId);
+    const userIdsExceptCaller = userIds.filter((id) => id !== userId);
 
     switch (eventType) {
       case FileEvents.CREATED: {
@@ -60,10 +89,7 @@ export class FileService {
           size: dto.size,
           oldPath: dto.oldPath || '',
         });
-        this.eventService.sendEvent(EventTypes.FILE_FILE_CREATED, userIdsExceptInitiator, {
-          sherryId,
-          filePath: savedFile.path,
-        });
+        this.eventService.sendEvent(EventTypes.FILE_FILE_CREATED, userIdsExceptCaller, savedFile);
         break;
       }
       case FileEvents.UPDATED: {
@@ -72,18 +98,12 @@ export class FileService {
         }
         const updatedFile = await this.updateFile(file, dto);
 
-        this.eventService.sendEvent(EventTypes.FILE_FILE_UPDATED, userIdsExceptInitiator, {
-          sherryId,
-          filePath: updatedFile.path,
-        });
+        this.eventService.sendEvent(EventTypes.FILE_FILE_UPDATED, userIdsExceptCaller, updatedFile);
         break;
       }
       case FileEvents.DELETED: {
         const deletedFile = await this.deleteFile(sherryId, dto.path);
-        this.eventService.sendEvent(EventTypes.FILE_FILE_DELETED, userIdsExceptInitiator, {
-          sherryId,
-          filePath: deletedFile.path,
-        });
+        this.eventService.sendEvent(EventTypes.FILE_FILE_DELETED, userIdsExceptCaller, deletedFile);
         break;
       }
       case FileEvents.MOVED: {
@@ -94,11 +114,7 @@ export class FileService {
         if (!movedFile) {
           throw new ConflictException('File rename failed');
         }
-        this.eventService.sendEvent(EventTypes.FILE_FILE_MOVED, userIdsExceptInitiator, {
-          sherryId,
-          filePath: movedFile.path,
-          oldPath: movedFile.oldPath,
-        });
+        this.eventService.sendEvent(EventTypes.FILE_FILE_MOVED, userIdsExceptCaller, movedFile);
         break;
       }
       default: {
