@@ -116,7 +116,11 @@ export class FileService {
       throw new ConflictException(`Sherry max file size is ${sherry.maxFileSize}`);
     }
 
-    if (!dto.path || !sherry.allowedFileNames.some(({ name }) => dto.path.match(name))) {
+    if (
+      !dto.path
+      // || !sherry.allowedFileNames.length
+      // || !sherry.allowedFileNames.some(({ name }) => dto.path.match(name))
+    ) {
       throw new ConflictException('filename should match sherry settings');
     }
   }
@@ -137,7 +141,12 @@ export class FileService {
     if (!await this.sherryService.canInteractWithSherry(sherryId, userId)) {
       throw new ForbiddenException(`Access to sherry ${sherryId} not allowed`);
     }
-    return this.fileRepository.getFilesBySherryId(sherryId);
+    // eslint-disable-next-line unicorn/no-await-expression-member
+    return (await this.fileRepository.getFilesBySherryId(sherryId)).map((f) => ({
+      ...f,
+      createdAt: +f.createdAt,
+      updatedAt: +f.updatedAt,
+    }));
   }
 
   async getFileByPathAndSherryId(sherryId: string, path: string, user: HttpUserPayload) {
@@ -162,7 +171,10 @@ export class FileService {
   }
 
   async storeFile(file: File, dto: FileEventDto, user: HttpUserPayload) {
-    const { eventType, sherryId } = dto;
+    const {
+      eventType,
+      sherryId,
+    } = dto;
     const { userId } = user;
     if (!await this.sherryService.canInteractWithSherry(sherryId, userId)) {
       throw new ForbiddenException(`Access to sherry ${sherryId} not allowed`);

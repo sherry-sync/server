@@ -8,5 +8,5 @@ export type CreateFileEvent = {
 
 export const isCreateFileEvent = (data: unknown): data is CreateFileEvent => {
   const event = data as CreateFileEvent;
-  return !!(event.fileType && event.hash && event.size && event.path && event.sherryId);
+  return !!(event.fileType && event.hash && event.size != null && event.path && event.sherryId);
 };

@@ -10,6 +10,6 @@ export type UpdateFileEvent = {
 export const isUpdateFileEvent = (data: unknown): data is UpdateFileEvent => {
   const event = data as UpdateFileEvent;
   return !!(event.path && event.sherryId
-    && (event.fileType || event.hash || event.size || event.oldPath)
+    && (event.fileType || event.hash || event.size != null || event.oldPath)
   );
 };
