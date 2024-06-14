@@ -13,7 +13,7 @@ import { EventTypes, FileEvents } from '@shared/enums';
 import { HttpUserPayload } from '@shared/types';
 
 import { EventService } from '@modules/event';
-import { FileEventDto, VerifyFileActionDto } from '@modules/file/dto';
+import { FileEventDto, SherryFileDto, VerifyFileActionDto } from '@modules/file/dto';
 import { FileRepository } from '@modules/file/file.repository';
 import {
   CreateFileEvent,
@@ -141,12 +141,8 @@ export class FileService {
     if (!await this.sherryService.canInteractWithSherry(sherryId, userId)) {
       throw new ForbiddenException(`Access to sherry ${sherryId} not allowed`);
     }
-    // eslint-disable-next-line unicorn/no-await-expression-member
-    return (await this.fileRepository.getFilesBySherryId(sherryId)).map((f) => ({
-      ...f,
-      createdAt: +f.createdAt,
-      updatedAt: +f.updatedAt,
-    }));
+    const files = await this.fileRepository.getFilesBySherryId(sherryId);
+    return SherryFileDto.mapFromMulti(files);
   }
 
   async getFileByPathAndSherryId(sherryId: string, path: string, user: HttpUserPayload) {
@@ -154,7 +150,8 @@ export class FileService {
     if (!await this.sherryService.canInteractWithSherry(sherryId, userId)) {
       throw new ForbiddenException(`Access to sherry ${sherryId} not allowed`);
     }
-    return this.fileRepository.getByPathAndSherryId(sherryId, path);
+    const file = await this.fileRepository.getByPathAndSherryId(sherryId, path);
+    return file ? SherryFileDto.mapFrom(file) : null;
   }
 
   async getFileInstance(sherryId: string, filePath: string, user: HttpUserPayload) {
@@ -180,7 +177,6 @@ export class FileService {
       throw new ForbiddenException(`Access to sherry ${sherryId} not allowed`);
     }
     const userIds = await this.sherryService.getSherryUsers(sherryId);
-    const userIdsExceptCaller = userIds.filter((id) => id !== userId);
 
     switch (eventType) {
       case FileEvents.CREATED: {
@@ -195,7 +191,12 @@ export class FileService {
           size: dto.size,
           oldPath: dto.oldPath || '',
         });
-        this.eventService.sendEvent(EventTypes.FILE_FILE_CREATED, userIdsExceptCaller, savedFile);
+
+        this.eventService.sendEvent(
+          EventTypes.FILE_FILE_CREATED,
+          userIds,
+          SherryFileDto.mapFrom(savedFile),
+        );
         break;
       }
       case FileEvents.UPDATED: {
@@ -204,12 +205,20 @@ export class FileService {
         }
         const updatedFile = await this.updateFile(file, dto);
 
-        this.eventService.sendEvent(EventTypes.FILE_FILE_UPDATED, userIdsExceptCaller, updatedFile);
+        this.eventService.sendEvent(
+          EventTypes.FILE_FILE_UPDATED,
+          userIds,
+          SherryFileDto.mapFrom(updatedFile),
+        );
         break;
       }
       case FileEvents.DELETED: {
         const deletedFile = await this.deleteFile(sherryId, dto.path);
-        this.eventService.sendEvent(EventTypes.FILE_FILE_DELETED, userIdsExceptCaller, deletedFile);
+        this.eventService.sendEvent(
+          EventTypes.FILE_FILE_DELETED,
+          userIds,
+          SherryFileDto.mapFrom(deletedFile),
+        );
         break;
       }
       case FileEvents.MOVED: {
@@ -220,7 +229,11 @@ export class FileService {
         if (!movedFile) {
           throw new ConflictException('File rename failed');
         }
-        this.eventService.sendEvent(EventTypes.FILE_FILE_MOVED, userIdsExceptCaller, movedFile);
+        this.eventService.sendEvent(
+          EventTypes.FILE_FILE_MOVED,
+          userIds,
+          SherryFileDto.mapFrom(movedFile),
+        );
         break;
       }
       default: {
