@@ -31,7 +31,7 @@ export class SherryService {
     const permission = await this.sherryRepository.getPermissionBySherryId(
       sherryId,
       userId,
-      SherryRole.OWNER,
+      [SherryRole.OWNER],
     );
 
     if (!permission) {
@@ -47,8 +47,12 @@ export class SherryService {
     return sherry;
   }
 
-  async canInteractWithSherry(sherryId: string, userId: string): Promise<boolean> {
-    const permission = await this.sherryRepository.getPermissionBySherryId(sherryId, userId);
+  async canInteractWithSherry(
+    sherryId: string,
+    userId: string,
+    roles: SherryRole[],
+  ): Promise<boolean> {
+    const permission = await this.sherryRepository.getPermissionBySherryId(sherryId, userId, roles);
     return !!permission;
   }
 

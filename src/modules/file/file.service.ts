@@ -12,6 +12,7 @@ import { Prisma } from '@prisma/client';
 import { EventTypes, FileEvents } from '@shared/enums';
 import { HttpUserPayload } from '@shared/types';
 
+import { SherryRoles } from '@modules/auth/enums';
 import { EventService } from '@modules/event';
 import { FileEventDto, SherryFileDto, VerifyFileActionDto } from '@modules/file/dto';
 import { FileRepository } from '@modules/file/file.repository';
@@ -41,7 +42,12 @@ export class FileService {
 
   async verifyFileAction(user: HttpUserPayload, dto: VerifyFileActionDto) {
     const { userId } = user;
-    if (!await this.sherryService.canInteractWithSherry(dto.sherryId, userId)) {
+
+    if (!await this.sherryService.canInteractWithSherry(
+      dto.sherryId,
+      userId,
+      [SherryRoles.WRITE, SherryRoles.OWNER],
+    )) {
       throw new ForbiddenException(`Access to sherry ${dto.sherryId} not allowed`);
     }
 
@@ -138,7 +144,11 @@ export class FileService {
   }
 
   async getFilesBySherryId(sherryId: string, userId: string) {
-    if (!await this.sherryService.canInteractWithSherry(sherryId, userId)) {
+    if (!await this.sherryService.canInteractWithSherry(
+      sherryId,
+      userId,
+      [SherryRoles.OWNER, SherryRoles.READ],
+    )) {
       throw new ForbiddenException(`Access to sherry ${sherryId} not allowed`);
     }
     const files = await this.fileRepository.getFilesBySherryId(sherryId);
@@ -147,7 +157,11 @@ export class FileService {
 
   async getFileByPathAndSherryId(sherryId: string, path: string, user: HttpUserPayload) {
     const { userId } = user;
-    if (!await this.sherryService.canInteractWithSherry(sherryId, userId)) {
+    if (!await this.sherryService.canInteractWithSherry(
+      sherryId,
+      userId,
+      [SherryRoles.OWNER, SherryRoles.READ],
+    )) {
       throw new ForbiddenException(`Access to sherry ${sherryId} not allowed`);
     }
     const file = await this.fileRepository.getByPathAndSherryId(sherryId, path);
@@ -156,7 +170,11 @@ export class FileService {
 
   async getFileInstance(sherryId: string, filePath: string, user: HttpUserPayload) {
     const { userId } = user;
-    if (!await this.sherryService.canInteractWithSherry(sherryId, userId)) {
+    if (!await this.sherryService.canInteractWithSherry(
+      sherryId,
+      userId,
+      [SherryRoles.READ, SherryRoles.OWNER],
+    )) {
       throw new ForbiddenException(`Access to sherry ${sherryId} not allowed`);
     }
     const file = await this.fileRepository.getByPathAndSherryId(sherryId, filePath);
@@ -173,7 +191,11 @@ export class FileService {
       sherryId,
     } = dto;
     const { userId } = user;
-    if (!await this.sherryService.canInteractWithSherry(sherryId, userId)) {
+    if (!await this.sherryService.canInteractWithSherry(
+      sherryId,
+      userId,
+      [SherryRoles.WRITE, SherryRoles.OWNER],
+    )) {
       throw new ForbiddenException(`Access to sherry ${sherryId} not allowed`);
     }
     const userIds = await this.sherryService.getSherryUsers(sherryId);

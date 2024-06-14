@@ -22,13 +22,13 @@ export class SherryRepository {
   async getPermissionBySherryId(
     sherryId: string,
     userId: string,
-    role?: SherryRole,
+    roles?: SherryRole[],
   ): Promise<SherryPermission | null> {
     return this.prisma.sherryPermission.findFirst({
       where: {
         userId,
         sherryId,
-        role,
+        role: { in: roles },
       },
     });
   }
