@@ -179,6 +179,32 @@ export class FileService {
     const userIds = await this.sherryService.getSherryUsers(sherryId);
 
     switch (eventType) {
+      case FileEvents.UPSERT: {
+        const existingFile = await this.fileRepository.getByPathAndSherryId(dto.sherryId, dto.path);
+        if (existingFile) {
+          const updatedFile = await this.updateFile(file, dto);
+          this.eventService.sendEvent(
+            EventTypes.FILE_FILE_UPDATED,
+            userIds,
+            SherryFileDto.mapFrom(updatedFile),
+          );
+        } else {
+          const savedFile = await this.saveFile(file, {
+            sherryId,
+            fileType: dto.fileType,
+            path: dto.path,
+            hash: dto.hash,
+            size: dto.size,
+            oldPath: dto.oldPath || '',
+          });
+          this.eventService.sendEvent(
+            EventTypes.FILE_FILE_CREATED,
+            userIds,
+            SherryFileDto.mapFrom(savedFile),
+          );
+        }
+        break;
+      }
       case FileEvents.CREATED: {
         if (!isCreateFileEvent(dto) || !file) {
           throw new BadRequestException('File event not processable');

@@ -3,4 +3,5 @@ export enum FileEvents {
   UPDATED = 'UPDATED',
   DELETED = 'DELETED',
   MOVED = 'MOVED',
+  UPSERT = 'UPSERT',
 }
