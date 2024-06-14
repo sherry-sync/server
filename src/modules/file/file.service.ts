@@ -7,7 +7,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, SherryFile } from '@prisma/client';
 
 import { EventTypes, FileEvents } from '@shared/enums';
 import { HttpUserPayload } from '@shared/types';
@@ -105,10 +105,6 @@ export class FileService {
     if (!dto.path) {
       throw new BadRequestException('path is not provided');
     }
-    const existingFile = await this.fileRepository.getByPathAndSherryId(dto.sherryId, dto.path);
-    if (!existingFile) {
-      throw new ConflictException(`File with path ${dto.path} does not exist`);
-    }
   }
 
   async verifyFileRules(userId: string, dto: VerifyFileActionDto) {
@@ -147,7 +143,7 @@ export class FileService {
     if (!await this.sherryService.canInteractWithSherry(
       sherryId,
       userId,
-      [SherryRoles.OWNER, SherryRoles.READ],
+      [SherryRoles.OWNER, SherryRoles.READ, SherryRoles.WRITE],
     )) {
       throw new ForbiddenException(`Access to sherry ${sherryId} not allowed`);
     }
@@ -173,7 +169,7 @@ export class FileService {
     if (!await this.sherryService.canInteractWithSherry(
       sherryId,
       userId,
-      [SherryRoles.READ, SherryRoles.OWNER],
+      [SherryRoles.READ, SherryRoles.OWNER, SherryRoles.WRITE],
     )) {
       throw new ForbiddenException(`Access to sherry ${sherryId} not allowed`);
     }
@@ -303,12 +299,22 @@ export class FileService {
 
   async deleteFile(sherryId: string, filePath: string) {
     const savedFile = await this.fileRepository.getByPathAndSherryId(sherryId, filePath);
-    if (!savedFile) {
-      throw new NotFoundException(`File with path ${filePath} does not exists`);
-    }
-    await this.fileRepository.deleteByPath(savedFile.path);
-    fs.unlinkSync(this.buildFilePath(sherryId, savedFile.sherryFileId));
-    return savedFile;
+
+    await this.fileRepository.deleteByPath(filePath);
+    try {
+      fs.unlinkSync(this.buildFilePath(sherryId, sherryId));
+    } catch { /* empty */ }
+    return {
+      sherryFileId: savedFile?.sherryFileId ?? '',
+      size: savedFile?.size ?? 0,
+      path: savedFile?.path ?? filePath,
+      oldPath: savedFile?.oldPath ?? filePath,
+      hash: savedFile?.hash ?? '',
+      fileType: savedFile?.fileType ?? 'FILE',
+      createdAt: savedFile?.createdAt ?? new Date(),
+      updatedAt: savedFile?.updatedAt ?? new Date(),
+      sherryId,
+    } as SherryFile;
   }
 
   async updateFile(file: File, data: UpdateFileEvent | CreateFileEvent) {

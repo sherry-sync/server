@@ -1,3 +1,5 @@
+import * as path from 'node:path';
+
 import { Injectable } from '@nestjs/common';
 import { Prisma, SherryFile } from '@prisma/client';
 
@@ -7,8 +9,15 @@ import { PrismaService } from '@shared/services';
 export class FileRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  deleteByPath(path: string): Promise<SherryFile> {
-    return this.prisma.sherryFile.delete({ where: { path } });
+  async deleteByPath(syncPath: string): Promise<SherryFile | null> {
+    await this.prisma.sherryFile.deleteMany({
+      where: {
+        path: {
+          startsWith: path.normalize(`${syncPath}/`),
+        },
+      },
+    });
+    return this.prisma.sherryFile.delete({ where: { path: syncPath } }).catch(() => null);
   }
 
   getFilesBySherryId(sherryId: string) {
@@ -17,9 +26,9 @@ export class FileRepository {
     });
   }
 
-  getByPathAndSherryId(sherryId: string, path: string) {
+  getByPathAndSherryId(sherryId: string, syncPath: string) {
     return this.prisma.sherryFile.findFirst({
-      where: { path, sherryId },
+      where: { path: syncPath, sherryId },
     });
   }
 
@@ -27,9 +36,9 @@ export class FileRepository {
     return this.prisma.sherryFile.create({ data });
   }
 
-  update(path: string, data: Prisma.SherryFileUpdateInput): Promise<SherryFile | null> {
+  update(syncPath: string, data: Prisma.SherryFileUpdateInput): Promise<SherryFile | null> {
     return this.prisma.sherryFile.update({
-      where: { path },
+      where: { path: syncPath },
       data,
     });
   }
