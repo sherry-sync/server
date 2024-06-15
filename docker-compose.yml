@@ -22,6 +22,8 @@ services:
         condition: service_healthy
     networks:
       - sherry-net
+    volumes:
+      - ./uploads:/usr/src/app/uploads
 
   db:
     container_name: db
