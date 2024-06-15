@@ -1,0 +1,50 @@
+version: "3.9"
+
+name: sherry
+services:
+  server:
+    container_name: api
+    build:
+      context: .
+      args:
+        - DATABASE_URL=postgresql://postgres:${DB_PASSWORD}@db:5432/shr?schema=public
+        - APP_SECRET=${APP_SECRET}
+        - PEPPER=${PEPPER}
+        - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
+    expose:
+      - "3000:3000"
+      - "3001:3001"
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sherry-net
+
+  db:
+    container_name: db
+    image: postgres:16.3
+    environment:
+      POSTGRES_DB: shr
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: pg_isready -U postgres -d shr
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sherry-net
+
+volumes:
+  db_data:
+
+networks:
+  sherry-net:
