@@ -179,10 +179,10 @@ export class SherryService {
       maxDirSize: data.maxDirSize,
       allowDir: data.allowDir,
     });
-    if (data.allowedFileNames && data.allowedFileNames.length > 0) {
+    if (data.allowedFileNames) {
       await this.recreateFileNames(sherryId, data.allowedFileNames);
     }
-    if (data.allowedFileTypes && data.allowedFileTypes.length > 0) {
+    if (data.allowedFileTypes) {
       await this.recreateFileTypes(sherryId, data.allowedFileTypes);
     }
 

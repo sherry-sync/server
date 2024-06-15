@@ -28,10 +28,10 @@ export class UpdateSherryDto {
   @Optional()
   @IsArray()
   @IsString({ each: true })
-    allowedFileNames: string[] = [];
+    allowedFileNames: string[];
 
   @Optional()
   @IsArray()
   @IsString({ each: true })
-    allowedFileTypes: string[] = [];
+    allowedFileTypes: string[];
 }
